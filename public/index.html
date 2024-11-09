@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Album Collection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        .album {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #fff;
+            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .options, .search-container {
+            margin-bottom: 10px;
+            padding: 20px;
+            background-color: #825cb8; /* Matching the purple color */
+            border-radius: 10px;
+            box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+
+        select, input {
+            padding: 8px;
+            font-size: 14px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 14px;
+            background-color: #4cae4c;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3e8e41;
+        }
+
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+            color: white;
+        }
+
+        .option-group {
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+            margin-bottom: 20px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        @media (max-width: 768px) {
+            .options, .search-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .option-group, .checkbox-group {
+                flex-direction: column;
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Album Collection</h1>
+
+    <!-- Search Functionality Div -->
+    <div class="search-container">
+        <div class="option-group">
+            <label for="search">Search:</label>
+            <input type="text" id="search" placeholder="Search for artist or album" oninput="fetchAlbums()">
+        </div>
+
+        <div class="option-group">
+            <label for="startYear">Start Year:</label>
+            <input type="number" id="startYear" placeholder="1970" oninput="fetchAlbums()">
+        </div>
+
+        <div class="option-group">
+            <label for="endYear">End Year:</label>
+            <input type="number" id="endYear" placeholder="1980" oninput="fetchAlbums()">
+        </div>
+    </div>
+
+    <!-- Options for Sorting -->
+    <div class="options">
+        <div class="option-group">
+            <label for="sortField">Sort by:</label>
+            <select id="sortField" onchange="fetchAlbums()">
+                <option value="artist">Artist</option>
+                <option value="title">Title</option>
+                <option value="year">Release Year</option>
+                <option value="genre">Genre</option>
+                <option value="tracks">Tracks</option>
+            </select>
+        </div>
+
+        <div class="option-group">
+            <label for="sortOrder">Order:</label>
+            <select id="sortOrder" onchange="fetchAlbums()">
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+            </select>
+        </div>
+
+        <div class="checkbox-group">
+            <label><input type="checkbox" class="field-checkbox" value="title" onchange="fetchAlbums()" checked> Title</label>
+            <label><input type="checkbox" class="field-checkbox" value="artist" onchange="fetchAlbums()" checked> Artist</label>
+            <label><input type="checkbox" class="field-checkbox" value="year" onchange="fetchAlbums()" checked> Year</label>
+            <label><input type="checkbox" class="field-checkbox" value="genre" onchange="fetchAlbums()" checked> Genre</label>
+            <label><input type="checkbox" class="field-checkbox" value="tracks" onchange="fetchAlbums()" checked> Tracks</label>
+        </div>
+    </div>
+
+    <div id="albums"></div>
+
+    <script>
+        async function fetchAlbums() {
+            const search = document.getElementById('search').value;
+            const startYear = document.getElementById('startYear').value;
+            const endYear = document.getElementById('endYear').value;
+            const sortField = document.getElementById('sortField').value;
+            const sortOrder = document.getElementById('sortOrder').value;
+    
+            const selectedFields = Array.from(document.querySelectorAll('.field-checkbox:checked'))
+                .map(checkbox => checkbox.value)
+                .join(',');
+
+            let query = `/albums?sortField=${sortField}&sortOrder=${sortOrder}&fields=${selectedFields}`;
+            if (startYear) query += `&startYear=${startYear}`;
+            if (endYear) query += `&endYear=${endYear}`;
+            if (search) query += `&search=${encodeURIComponent(search)}`;
+    
+            try {
+                const response = await fetch(query);
+                if (!response.ok) {
+                    throw new Error('Network Error');
+                }
+                const albums = await response.json();
+                displayAlbums(albums, selectedFields.split(','));
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+    
+        function displayAlbums(albums, selectedFields) {
+            const albumsDiv = document.getElementById('albums');
+            albumsDiv.innerHTML = '';
+    
+            if (albums.length === 0) {
+                albumsDiv.innerHTML = '<p>No albums found</p>';
+                return;
+            }
+    
+            albums.forEach(album => {
+                const albumDiv = document.createElement('div');
+                albumDiv.classList.add('album');
+    
+                let albumHTML = '';
+    
+                if (selectedFields.includes('title') && album.title) {
+                    albumHTML += `<h2>${album.title}</h2>`;
+                }
+    
+                if (selectedFields.includes('artist') && album.artist) {
+                    albumHTML += `<p>Artist: ${album.artist}</p>`;
+                }
+    
+                if (selectedFields.includes('year') && album.year) {
+                    albumHTML += `<p>Release Year: ${album.year}</p>`;
+                }
+    
+                if (selectedFields.includes('genre') && album.genre) {
+                    albumHTML += `<p>Genre: ${album.genre}</p>`;
+                }
+    
+                if (selectedFields.includes('tracks') && album.tracks) {
+                    albumHTML += `<p>Tracks: ${album.tracks}</p>`;
+                }
+    
+                albumDiv.innerHTML = albumHTML;
+                albumsDiv.appendChild(albumDiv);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchAlbums);
+    </script>
+    
+</body>
+</html>
